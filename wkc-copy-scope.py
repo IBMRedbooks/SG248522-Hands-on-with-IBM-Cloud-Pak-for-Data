@@ -24,6 +24,7 @@ def setup_env():
     global access_token
     global scope
     global session
+    global working_dir
     
     cpd_host = "cpd-cpd-instance.apps.cp4d-4-0.os.fyre.ibm.com"
     cs_host = "cp-console.apps.cp4d-4-0.os.fyre.ibm.com"
@@ -42,6 +43,7 @@ def setup_env():
         'mime_type': "application/json"
         }
     session = requests.Session()
+    working_dir = "/tmp"
 
 
 # Generate a bearer token from provided CPD credentials.
@@ -179,7 +181,11 @@ def getGovernanceArtifacts( category_id ):
       primary_categories.append( asset_relationships[i]['entity']['target_parent_category_id'])
       governance_artifacts.append( [asset_relationships[i]['entity']['target_type'], asset_relationships[i]['entity']['target_id'], asset_relationships[i]['entity']['target_version_id']])
  
- 
+    #for debugging purposes
+    ga_df = pd.DataFrame( governance_artifacts )
+    ga_df.to_csv( working_dir + "/governance_artifacts.txt" )
+
+
     # lets remove the dupliactes from the list of primary categories
     primary_categories = list( set(primary_categories))  
 
@@ -221,7 +227,7 @@ def export_categories( categories ):
     if response.status_code != 200:
       raise ValueError( response.text ) 
     else:
-      file = open("category_" + categories[i] + ".zip", "wb")
+      file = open(working_dir + "/category_" + categories[i] + ".zip", "wb")
       file.write(response.content)
       file.close()
 
@@ -231,11 +237,11 @@ def process_exports( categories, governance_artifacts ):
    artifact_types = ['category', 'classification', 'data_class', 'glossary_term', 'policy', 'reference_data', 'rule' ]
 
    for i in range( len(categories) ):
-     file_path = "category_" + categories[i]
-     zip_file = "category_" + categories[i] + ".zip"
+     file_path = working_dir + "/category_" + categories[i]
+     zip_file = working_dir +  "/category_" + categories[i] + ".zip"
 
      with zipfile.ZipFile( zip_file ,"r") as zip_ref:
-       zip_ref.extractall( "category_" + categories[i] )
+       zip_ref.extractall( file_path )
      
      # lets change to the extracted file directory and process the individual files
      # first we will delete any empty files then we will delete the content that is not in our list of governance artifacts
@@ -249,8 +255,13 @@ def process_exports( categories, governance_artifacts ):
               os.remove( entry )
             else:
               # Now we need to ensure that only governance artifacts in our scope are in the csv files
-              # This code needs some work - is the governance_artifacts list object iterable
-              df = df.loc[df['Artifact ID'].isin(governance_artifacts)]
+              # This code needs some work - the governance_artifacts is a list of lists.  the artifact ids that are in scope are in the second position of each row
+
+              governance_artifact_ids = []
+              for sublist in governance_artifacts:
+                governance_artifact_ids.append(sublist[1])
+
+              df = df.loc[df['Artifact ID'].isin(governance_artifact_ids)]
               df = df.drop(columns=['Artifact ID'])
               df.to_csv( entry + ".new", index=False )
 
