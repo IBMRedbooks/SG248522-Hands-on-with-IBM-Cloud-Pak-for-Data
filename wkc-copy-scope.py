@@ -43,12 +43,11 @@ def setup_env():
         'mime_type': "application/json"
         }
     session = requests.Session()
-    working_dir = "/tmp"
+    working_dir = "/Users/neil/tmp"
 
 
-# Generate a bearer token from provided CPD credentials.
+# Generate a bearer token from provided CPD credentials. Note there is a difference when aim is enabled
 def authorize( iamEnabled ):
- 
 
     if( iamEnabled != "true" ):
       url = f"https://{cpd_host}/icp4d-api/v1/authorize"
@@ -70,7 +69,6 @@ def authorize( iamEnabled ):
           raise ValueError(f"Error authenticating...\nResponse code: {response.status_code}\nResponse text:{response.text}")
     
     else:
-
       url = f"https://{cs_host}/idprovider/v1/auth/identitytoken"
       payload = {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -108,13 +106,16 @@ def authorize( iamEnabled ):
 
 
 # Copy the scope we are insterested in 
-def copy_scope( scope_name, enterpise_category ):
+def copy_scope( scope_name, enterprise_category_name ):
 
-    print( "Calling get category id") 
-    category_id = get_category_for_scope( scope_name )
+    # Get the cetgory id for the scope we are instered in
+    scope_category_id = get_category_for_scope( scope_name )
 
-    print( "Calling get governance artifacts")
-    governanceArtifacts = getGovernanceArtifacts( category_id )
+    # Get or create if it doesn't exist the enterprise category
+    enterprise_category_id = get_enterprise_category( enterprise_category_name  )
+
+    # process the 
+    processGovernanceArtifacts( scope_category_id )
 
 
 
@@ -146,7 +147,52 @@ def get_category_for_scope( scope_name ):
 
 
 
-def getGovernanceArtifacts( category_id ):
+def get_enterprise_category( enterprise_category_name  ):
+
+  enterprise_category_id = ""
+  url = url = f"https://{cpd_host}/v3/search"
+  data = {
+    "_source": ["metadata","entity", "categories", "category_id"],
+    "query": {
+      "bool": {
+        "must": [
+          { "query_string": { "query": enterprise_category_name, "fields":  ["metadata.name.keyword"] } },
+          { "term": { "metadata.artifact_type": "category" }}
+        ]
+      }
+    }
+  }
+
+  response = session.post(url, headers=headers, json=data, verify=False)
+
+  # Need to make tis more robust in case we have more categories with the same name
+  if response.status_code == 200:
+    responseJson  = json.loads(response.text)
+    if responseJson['size'] > 0:
+      enterprise_category=json_normalize(responseJson['rows'])
+      enterprise_category_id=enterprise_category['entity.artifacts.artifact_id'][0]
+  else:
+    url = url = f"https://{cpd_host}/v3/categories"
+    data = {
+      "name": enterprise_category_name
+    }
+
+    response = session.post(url, headers=headers, json=data, verify=False)
+
+    if response.status_code != 201:
+      raise ValueError(f"Error retrieving category: {response.text}")
+    else:
+      responseJson  = json.loads(response.text)
+      if responseJson['size'] > 0:
+       resource=json_normalize(responseJson )
+       enterprise_category_id=resource['artifact_id']
+
+  return enterprise_category_id
+
+
+
+
+def processGovernanceArtifacts( category_id ):
 
   url = url = f"https://{cpd_host}/v3/categories/{category_id}"
  
@@ -173,8 +219,7 @@ def getGovernanceArtifacts( category_id ):
     #'target_effective_start_date': '2022-06-23T20:08:28.931Z', 'source_id': '36ccad18-cf9e-4d8e-b226-d7e9d1334cfa', 'source_global_id': 'f7ddd0f1-095a-41d0-bc89-44b2feed21ba_36ccad18-cf9e-4d8e-b226-d7e9d1334cfa', 
     #'source_name': 'Customer Overview'}}
 
-    # lets get the primary categories that we will need later and all the governance artifacts that are part of our scoipe
-
+    # lets process the response and create the list of the primary categories and list of governance artifacts t
     primary_categories = []
     governance_artifacts = []
     for i in range( len(asset_relationships) ):
@@ -185,9 +230,9 @@ def getGovernanceArtifacts( category_id ):
     ga_df = pd.DataFrame( governance_artifacts )
     ga_df.to_csv( working_dir + "/governance_artifacts.txt" )
 
-
     # lets remove the dupliactes from the list of primary categories
     primary_categories = list( set(primary_categories))  
+
 
 
     # Export all of the primnary categories
@@ -206,16 +251,16 @@ def getGovernanceArtifacts( category_id ):
 
 
     # Cleanup
-
     cleanup( primary_categories )
 
 
+# Export all of the governance artifacts that are in our business scope. This will write a zip file for each of the categories in scope
 def export_categories( categories ):
 
 
   # export all the categories in one go this gives us a problem with duplicate reference data files
-  #categoryids = ",".join(categories )
-  #url =  f"https://{cpd_host}/v3/governance_artifact_types/export?category_ids={categoryids}"
+  # categoryids = ",".join(categories )
+  # url =  f"https://{cpd_host}/v3/governance_artifact_types/export?category_ids={categoryids}"
 
   #so lets do it a category at a time
   data = {}
@@ -232,6 +277,9 @@ def export_categories( categories ):
       file.close()
 
 
+
+# The exports contain all governance artifacts for each category that was exported. We need to process the exports so that only the governance artifacts taht are in our scope are 
+# contained with the processed files
 def process_exports( categories, governance_artifacts ):
 
    artifact_types = ['category', 'classification', 'data_class', 'glossary_term', 'policy', 'reference_data', 'rule' ]
@@ -240,30 +288,43 @@ def process_exports( categories, governance_artifacts ):
      file_path = working_dir + "/category_" + categories[i]
      zip_file = working_dir +  "/category_" + categories[i] + ".zip"
 
+     # lest unzip the files so we can work on the individual csv's
      with zipfile.ZipFile( zip_file ,"r") as zip_ref:
        zip_ref.extractall( file_path )
      
-     # lets change to the extracted file directory and process the individual files
-     # first we will delete any empty files then we will delete the content that is not in our list of governance artifacts
+   
+    # each zip file will contain directories for each glossary artifact type. Lets process them, deleting any empty files as we do so
 
      for j in range( len(artifact_types)):
        current_file_path = file_path + "/" + artifact_types[j]
-       for entry in list_full_paths( current_file_path  ):
-         if os.path.isfile(os.path.join(entry)):
-            df = pd.read_csv(entry) 
+       for curr_file in list_full_paths( current_file_path  ):
+         if os.path.isfile(os.path.join( curr_file)):
+            df = pd.read_csv( curr_file, keep_default_na=False) 
             if( df.empty ):
-              os.remove( entry )
+              os.remove( curr_file )
             else:
+              print( "*** Processing file "  + curr_file )
+
               # Now we need to ensure that only governance artifacts in our scope are in the csv files
               # This code needs some work - the governance_artifacts is a list of lists.  the artifact ids that are in scope are in the second position of each row
+
+              # This is too brutal - we are missing tags, classifications and any secondary categgories that are relevant
 
               governance_artifact_ids = []
               for sublist in governance_artifacts:
                 governance_artifact_ids.append(sublist[1])
+              #governance_artifact_ids.append( None ) 
+              #governance_artifact_ids.append( '' ) 
 
               df = df.loc[df['Artifact ID'].isin(governance_artifact_ids)]
-              df = df.drop(columns=['Artifact ID'])
-              df.to_csv( entry + ".new", index=False )
+              # df = df.drop(columns=['Artifact ID'])
+              df.to_csv( curr_file + ".new1.csv", index=False )
+              
+              # 
+              #if artifact_types[j] == "glossary_term":
+              #  process_term_file( curr_file, df, categories, governance_artifact_ids )
+
+
 
        # if the directory is empty remove it
        if len( os.listdir( current_file_path )) == 0:
@@ -278,6 +339,65 @@ def build_category_structure( top_level_category ):
     print( top_level_category)
 
 
+
+def upload_terms_to_category( file_name, target_category ):
+
+    url = f"https://{cpd_host}/v3/governance_artifact_types/import"
+
+    files = {'file': (file_name, open(file_name, 'rb'), 'application/x-zip-compressed')}
+
+    response = session.post( url, headers=headers, data=files, verify=False)
+
+    if response.status_code != 202:
+      raise ValueError(f"Error retrieving category: {response.text}")
+    else:
+      responseJson  = json.loads(response.text)
+
+
+
+def process_term_file(curr_file, df, categories, governance_artifact_ids ):
+
+    #governance_artifact_df = pandas.DataFrame()    
+    # First make sure we only have artifact we're insterested in and their components
+    # NOt sure there is a quick wa to do this without iterating over the entries in each file
+    
+    #categories.append('')
+
+    #df = df.loc[ df['Secondary Categories'].isin(categories)]
+    #df = df.drop(columns=['Artifact ID'])
+    #df.to_csv( curr_file + ".new1.csv", index=False )
+
+
+    #lets get the rows in the dataframe where our governance artifacts start
+    governance_artifact_locations = df['Artifact ID'].isin(governance_artifact_ids)
+    governance_artifact_locations = governance_artifact_locations.isin( True ) 
+    print( governance_artifact_locations)
+
+    #for i in range(len(df)):
+    #  row = df.iloc[:i]
+
+        
+    #  if row['Artifact ID'].isin(governance_artifact_ids).any().any() :
+    #    print( "Got some stuff we're interested in " + row['Name'])
+    #    governance_artfact_df = row.copy()
+
+
+    #    while processing_governance_artifact == True:
+    #      row = df.iloc[:i+1]
+        
+    #      if row['Artifact ID'].isin(governance_artifact_ids).any().any() :
+    #         print( "Got some stuff we're interested in " + row['Name'])
+    #         governance_artfact_df.APPEND( row.copy() )
+    #      else:
+    #          processing_governance_artifact == True
+
+    #  if row['Artifact ID'] == '' :
+    #    print( "Got some stuff we're interested in " + row['Name'])
+    #    governance_artfact_df = row.copy()
+
+
+def process_reference_data_file( curr_file, df, categories, governance_artifact_ids  ):
+  print("******* TO DO *********")
 
 def cleanup( categories ):
    for i in range( len(categories) ):
@@ -298,6 +418,7 @@ def list_full_paths(directory):
 # Needd some instructions how to invoke this
 setup_env()
 authorize( "true" )
-copy_scope( "Customer Overview" , "Redbooks")
+copy_scope( "Customer Overview" , "Test")
+#upload_terms_to_category( "/tmp/test.zip", "Redbooks" )
 finish()
 
