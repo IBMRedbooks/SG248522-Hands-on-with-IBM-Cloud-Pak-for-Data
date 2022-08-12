@@ -25,13 +25,12 @@ def setup_env():
     global scope
     global session
     global working_dir
-    
+    global apikey
+
     cpd_host = "cpd-cpd-instance.apps.cp4d-4-0.os.fyre.ibm.com"
     cs_host = "cp-console.apps.cp4d-4-0.os.fyre.ibm.com"
-    username = "admin"
-    password = "Jtkrh2Z1762P"
-    cs_username  = "admin"
-    cs_password = "D3nWJ8Cm3psroFjIkxw4kvpUOssbGTzL"
+    username  = "neil.patterson@nl.ibm.com"
+    apikey = os.environ.get( 'APIKEY' )
     headers = {
         'Content-Type': "application/json",
         'Accept': "*/*",
@@ -46,62 +45,26 @@ def setup_env():
     working_dir = "/Users/neil/tmp"
 
 
-# Generate a bearer token from provided CPD credentials. Note there is a difference when aim is enabled
-def authorize( iamEnabled ):
+# Generate a bearer token from provided CPD credentials. api|-key for the user is required
+def authorize( ):
 
-    if( iamEnabled != "true" ):
-      url = f"https://{cpd_host}/icp4d-api/v1/authorize"
-      payload = {
-        "username": username,
-        "password": password
-      }
+    url = f"https://{cpd_host}/icp4d-api/v1/authorize"
+    payload = {
+      "username": username,
+      "api_key": apikey
+    }
 
-      # When successfully authenticated token is stored in a global variable as below
-      try:
-          response = session.post(url,json=payload, verify=False)
-      except:
-          raise ValueError(f"Error authenticating... Check CPD_HOST, USERNAME, and PASSWORD argument values.")
-    
+    # When successfully authenticated token is stored in a global variable as below
+    try:
+      response = session.post(url,json=payload, verify=False)
       if response.status_code == 200:
-          access_token = response.json()['token']
-          headers['Authorization'] = f"Bearer {access_token}"
+        access_token = response.json()['token']
+        headers['Authorization'] = f"Bearer {access_token}"
       else:
-          raise ValueError(f"Error authenticating...\nResponse code: {response.status_code}\nResponse text:{response.text}")
-    
-    else:
-      url = f"https://{cs_host}/idprovider/v1/auth/identitytoken"
-      payload = {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "grant_type": "password",
-        "scope": "openid",
-        "username": cs_username,
-        "password": cs_password
-      }
+        raise ValueError(f"Error authenticating...\nResponse code: {response.status_code}\nResponse text:{response.text}")
+    except:
+      raise ValueError(f"Error authenticating... Check CPD_HOST, USERNAME, and PASSWORD argument values.")
 
-      # When successfully authenticated token is stored in a global variable as below
-      try:
-          response = session.post(url,json=payload, verify=False)
-      except:
-          raise ValueError(f"Error authenticating... Check CPD_HOST, USERNAME, and PASSWORD argument values.")
-    
-      if response.status_code == 200:
-
-          iam_token = response.json()['access_token']
-          url = f'https://{cpd_host}/v1/preauth/validateAuth' 
-
-          tmp_headers = {
-             "username": cs_username,
-             "iam-token": iam_token
-          }
-
-          try:
-            response = session.get(url, headers=tmp_headers,  verify=False)
-            access_token = response.json()['accessToken']
-            headers['Authorization'] = f"Bearer {access_token}"
-          except:
-            raise ValueError(f"Error authenticating... Check CPD_HOST, USERNAME, and PASSWORD argument values.")
-      else:
-          raise ValueError(f"Error authenticating...\nResponse code: {response.status_code}\nResponse text:{response.text}")
 
 
 
@@ -352,6 +315,7 @@ def upload_terms_to_category( file_name, target_category ):
       raise ValueError(f"Error retrieving category: {response.text}")
     else:
       responseJson  = json.loads(response.text)
+      print( responseJson )
 
 
 
@@ -417,8 +381,8 @@ def list_full_paths(directory):
 
 # Needd some instructions how to invoke this
 setup_env()
-authorize( "true" )
+authorize( )
 copy_scope( "Customer Overview" , "Test")
-#upload_terms_to_category( "/tmp/test.zip", "Redbooks" )
+#upload_terms_to_category( "/Users/neil/tmp/test.zip", "Redbooks" )
 finish()
 
