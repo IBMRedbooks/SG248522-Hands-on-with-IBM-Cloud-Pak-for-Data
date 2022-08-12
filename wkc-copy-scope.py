@@ -32,15 +32,15 @@ def setup_env():
     username  = "neil.patterson@nl.ibm.com"
     apikey = os.environ.get( 'APIKEY' )
     headers = {
-        'Content-Type': "application/json",
-        'Accept': "*/*",
-        'Cache-Control': "no-cache",
-        'Accept-Encoding': "gzip, deflate",
-        'Content-Length': "56",
-        'Connection': "keep-alive",
-        'cache-control': "no-cache",
-        'mime_type': "application/json"
-        }
+      'Content-Type': "application/json",
+      'Accept': "*/*",
+      'Cache-Control': "no-cache",
+      'Accept-Encoding': "gzip, deflate",
+      'Content-Length': "56",
+      'Connection': "keep-alive",
+      'cache-control': "no-cache",
+      'mime_type': "application/json"
+    }
     session = requests.Session()
     working_dir = "/Users/neil/tmp"
 
@@ -309,10 +309,28 @@ def upload_terms_to_category( file_name, target_category ):
 
     files = {'file': (file_name, open(file_name, 'rb'), 'application/x-zip-compressed')}
 
-    response = session.post( url, headers=headers, data=files, verify=False)
+    #setup the headers for this method
+    #headers = {
+    #  'Content-Type': "application/json",
+    #  'Accept': "*/*",
+    #  'Cache-Control': "no-cache",
+    #  'Accept-Encoding': "gzip, deflate",
+    #  'Content-Length': "56",
+    #  'Connection': "keep-alive",
+    #  'cache-control': "no-cache",
+    #  'mime_type': "application/json"
+    #}
+
+
+    upload_headers = headers
+    upload_headers['Content-Type'] = "multipart/form-data"
+    upload_headers.pop( 'mime_type'  )
+    upload_headers.pop( 'Content-Length' )
+
+    response = session.post( url, headers=upload_headers, files=files, verify=False)
 
     if response.status_code != 202:
-      raise ValueError(f"Error retrieving category: {response.text}")
+      raise ValueError(f"Error retrieving category: {response.text} " + str( response.status_code ) )
     else:
       responseJson  = json.loads(response.text)
       print( responseJson )
@@ -363,6 +381,10 @@ def process_term_file(curr_file, df, categories, governance_artifact_ids ):
 def process_reference_data_file( curr_file, df, categories, governance_artifact_ids  ):
   print("******* TO DO *********")
 
+
+
+
+
 def cleanup( categories ):
    for i in range( len(categories) ):
      file_path = "category_" + categories[i] + ".zip"
@@ -382,7 +404,7 @@ def list_full_paths(directory):
 # Needd some instructions how to invoke this
 setup_env()
 authorize( )
-copy_scope( "Customer Overview" , "Test")
-#upload_terms_to_category( "/Users/neil/tmp/test.zip", "Redbooks" )
+#copy_scope( "Customer Overview" , "Test")
+upload_terms_to_category( "/Users/neil/tmp/test.zip", "Redbooks" )
 finish()
 
