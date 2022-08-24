@@ -1,8 +1,5 @@
 #!/bin/sh
 
-export PATH=$PATH:/opt/IBM/DB2/bin
-
-
 username="redbook"
 password="password"
 
@@ -14,7 +11,7 @@ if [ $(id -u) -eq 0 ]; then
         else
                 useradd -m "$username"
                 [ $? -eq 0 ] && echo "User has been added to system!" || echo "Failed to add a user!"
-                echo -e "${password}" | passwd ${username}
+                echo -e "${username}:${password}" | chpasswd 
         fi
 
         source /home/db2inst1/.bashrc
