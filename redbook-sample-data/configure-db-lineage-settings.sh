@@ -33,6 +33,7 @@ __configureDBLineageSettings()
    echo -e "\nCopy scripts  to DB2"
    #push the payload
    $D cp db-lineage-settings.sh  $DB2_DOCKER_NAME:/samples/scripts
+   $D cp lineage-settings.sql  $DB2_DOCKER_NAME:/samples/scripts
 
    echo -e "\nRunning lineage configuration script"
    $D exec  $DB2_DOCKER_NAME  bash -c "cd /samples/scripts && chmod -R 777 db-lineage-settings.sh  &&  ./db-lineage-settings.sh"
