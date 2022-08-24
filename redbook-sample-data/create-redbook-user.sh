@@ -16,7 +16,7 @@ if [ $(id -u) -eq 0 ]; then
                 [ $? -eq 0 ] && echo "User has been added to system!" || echo "Failed to add a user!"
         fi
 
-        su db2inst1
+        source /home/db2inst1/.bashrc
 
         echo "Connecting to the bank database\n"
         db2 connect to database bank as user db2inst1 password password
