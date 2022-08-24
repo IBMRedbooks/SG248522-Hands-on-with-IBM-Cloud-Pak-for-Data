@@ -25,3 +25,4 @@ if [ $(id -u) -eq 0 ]; then
 else
         echo "Only root may add a user to the system."
         exit 2
+        
