@@ -12,8 +12,9 @@ if [ $(id -u) -eq 0 ]; then
         if [ $? -eq 0 ]; then
                 echo "Username $username already exists!"
         else
-                useradd -m -p "$password" "$username"
+                useradd -m "$username"
                 [ $? -eq 0 ] && echo "User has been added to system!" || echo "Failed to add a user!"
+                echo -e "${password}" | passwd ${username}
         fi
 
         source /home/db2inst1/.bashrc
