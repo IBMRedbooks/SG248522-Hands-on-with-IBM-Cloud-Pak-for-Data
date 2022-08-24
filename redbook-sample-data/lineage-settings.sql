@@ -1,4 +1,4 @@
-db2 SET SCHEMA SYSTOOLS;
+SET SCHEMA SYSTOOLS;
 
 BEGIN
 declare ret int;
