@@ -3,6 +3,7 @@
 username="redbook"
 password="password"
 
+
 if [ $(id -u) -eq 0 ]; then
         egrep "^$username" /etc/passwd >/dev/null
         if [ $? -eq 0 ]; then
