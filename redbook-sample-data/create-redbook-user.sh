@@ -1,5 +1,8 @@
 #!/bin/bash
 
+export PATH=$PATH:/opt/IBM/DB2/bin
+
+
 username="redbook"
 password="password"
 
