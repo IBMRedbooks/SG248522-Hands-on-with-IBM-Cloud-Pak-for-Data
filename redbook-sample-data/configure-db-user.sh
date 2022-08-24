@@ -34,7 +34,7 @@ __configureDB2ForLineage()
    #push the payload
    $D cp create-redbook-user.sh  $DB2_DOCKER_NAME:/samples/scripts
 
-   echo -e "\nRunning lineage configuration script"
+   echo -e "\nRunning create redbook user script"
    $D exec  $DB2_DOCKER_NAME  bash -c "cd /samples/scripts && chmod -R 777 create-redbook-user.sh  &&  ./create-redbook-user.sh"
 
 }
