@@ -27,6 +27,9 @@ __loadDB2Docker()
         exit 1
    fi
 
+  #run setup the payload
+
+
    if [[ ! `$D  images --quiet ibmcom/db2` ]]; then
         echo -e "\nLoading Docker $DB2_DOCKER_NAME ..."
         $D run -d --name $DB2_DOCKER_NAME -p 50000:50000 --env-file ./db_env -v /Docker:/database:z --privileged=true  ibmcom/db2
@@ -49,7 +52,6 @@ __loadDB2Docker()
 
 
    #run setup the payload
-   $D exec  $DB2_DOCKER_NAME  bash -c "cd /samples/payload && chmod -R 777 data  &&  ./load.sh"
-
+   $D exec  $DB2_DOCKER_NAME  bash -c "cd /samples/payload && chmod -R 777 /samples  &&  ./load.sh"
 }
 __loadDB2Docker
