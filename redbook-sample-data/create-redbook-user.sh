@@ -3,7 +3,6 @@
 username="redbook"
 password="password"
 
-
 if [ $(id -u) -eq 0 ]; then
         egrep "^$username" /etc/passwd >/dev/null
         if [ $? -eq 0 ]; then
@@ -20,7 +19,7 @@ if [ $(id -u) -eq 0 ]; then
         db2 connect to bank user db2inst1 using password
 
 
-        echo "granting the redbook user permissions\n"
+        echo "granting the redbook user permissions on the bank database\n"
         db2 GRANT DBADM, CREATETAB, BINDADD, CONNECT, CREATE_NOT_FENCED, IMPLICIT_SCHEMA, LOAD ON DATABASE TO USER redbook
 
         exit 0
