@@ -1,7 +1,5 @@
 #!/bin/sh
 
-
-
 if [ $(id -u) -eq 0 ]; then
         
         source /home/db2inst1/.bashrc

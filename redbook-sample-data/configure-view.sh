@@ -18,7 +18,7 @@ fi
 
 ##### Functions
 
-__configureDB2ForLineage()
+__configureView()
 {
 
    if [[ ! '$D ps | grep $DB2_DOCKERNAME' ]]; then
@@ -26,12 +26,13 @@ __configureDB2ForLineage()
      exit
    fi
 
-   echo -e "\nCopy create-rebook-user script to container"
+   echo -e "\nCopy lineage scripts to container"
    #push the payload
-   $D cp create-redbook-user.sh  $DB2_DOCKER_NAME:/samples/scripts
+   $D cp create-view.sh  $DB2_DOCKER_NAME:/samples/scripts
+   $D cp create-view.sql  $DB2_DOCKER_NAME:/samples/scripts
 
-   echo -e "\nRunning create redbook user script"
-   $D exec  $DB2_DOCKER_NAME  bash -c "cd /samples/scripts && chmod -R 777 create-redbook-user.sh  &&  ./create-redbook-user.sh"
+   echo -e "\nRunning lineage configuration script"
+   $D exec  $DB2_DOCKER_NAME  bash -c "cd /samples/scripts && chmod -R 777 create-view.sh  &&  ./create-view.sh"
 
 }
-__configureDB2ForLineage
+__configureView

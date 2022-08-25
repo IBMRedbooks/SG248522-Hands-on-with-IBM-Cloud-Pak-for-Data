@@ -26,11 +26,7 @@ __configureDBLineageSettings()
      exit
    fi
 
-   echo -e "\nCreate directory for scripts"
-   #make a sample directory
-   $D   exec $DB2_DOCKER_NAME bash -c  "mkdir -p samples/scripts"
-
-   echo -e "\nCopy scripts  to DB2"
+   echo -e "\nCopy lineage scripts to container"
    #push the payload
    $D cp db-lineage-settings.sh  $DB2_DOCKER_NAME:/samples/scripts
    $D cp lineage-settings.sql  $DB2_DOCKER_NAME:/samples/scripts
