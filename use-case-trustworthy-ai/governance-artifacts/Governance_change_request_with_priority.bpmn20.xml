@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:flowable="http://flowable.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="https://dataplatform.cloud.ibm.com/workflows/requests/Governance_change_request_priority">
+  <process id="Governance_change_request_prio" name="Governance change request with priority" isExecutable="true">
+    <documentation>Governance change request using priority</documentation>
+    <startEvent id="startEvent1" flowable:formFieldValidation="true">
+      <extensionElements>
+        <flowable:formProperty id="title" name="Request title" type="string" readable="false" required="true"></flowable:formProperty>
+        <flowable:formProperty id="summary" name="Description of change" type="string" expression="${cpd:conf('{&quot;cpd_type&quot;:&quot;long_text&quot;}')}" readable="false"></flowable:formProperty>
+        <flowable:formProperty id="category" name="Category" type="string" expression="${cpd:conf('{&quot;cpd_type&quot;:&quot;wkc_category&quot;}')}" readable="false" required="true"></flowable:formProperty>
+        <flowable:formProperty id="request_priority" name="Priority" type="enum" expression="${cpd:conf('{&quot;cpd_type&quot;:&quot;dropdown&quot;,&quot;kind&quot;:&quot;trigger&quot;}')}" readable="false">
+          <flowable:value id="low" name="Low"></flowable:value>
+          <flowable:value id="medium" name="Medium"></flowable:value>
+          <flowable:value id="high" name="High"></flowable:value>
+        </flowable:formProperty>
+      </extensionElements>
+    </startEvent>
+    <scriptTask id="sid-723963F8-3595-4AF3-8444-9DCA086761BE" name="Init state" scriptFormat="javascript" flowable:autoStoreVariables="false">
+      <script><![CDATA[scriptLogger.info(execution, 'First script step');
+if (typeof title!== 'undefined') {
+  scriptLogger.info(execution, 'Title: ' + title);
+  execution.setVariable('workflow_name', title);
+}
+if (typeof summary!== 'undefined') {
+  scriptLogger.info(execution, 'Summary: ' + summary);
+}
+if (typeof request_priority!== 'undefined') {
+  scriptLogger.info(execution, 'Priority: ' + request_priority);
+}
+execution.setVariable('action', null);
+execution.setVariable('comment', null);
+workflowStateAndActionLogger.updateInternalWorkflowState(execution, 'Request submitted');]]></script>
+    </scriptTask>
+    <userTask id="sid-B11DE76D-D8CF-4283-B040-33284F3837F4" name="approve" flowable:category="approval" flowable:formFieldValidation="true">
+      <documentation>Approve GCR ${title} $$$ Please approve the governance change request ${title} $$$ Data steward approves of the change $$$ Approve</documentation>
+      <extensionElements>
+        <flowable:formProperty id="action" type="enum" readable="false" required="true">
+          <flowable:value id="approve" name="Approve"></flowable:value>
+          <flowable:value id="-reject" name="Reject"></flowable:value>
+        </flowable:formProperty>
+        <flowable:formProperty id="comment" type="string" readable="false"></flowable:formProperty>
+        <flowable:formProperty id="title" name="Request title" type="string" writable="false"></flowable:formProperty>
+        <flowable:formProperty id="summary" name="Description of change" type="string" expression="${cpd:conf('{&quot;cpd_type&quot;:&quot;long_text&quot;}')}"></flowable:formProperty>
+        <flowable:formProperty id="category" name="Category" type="string" expression="${cpd:conf('{&quot;cpd_type&quot;:&quot;wkc_category&quot;}')}"></flowable:formProperty>
+        <flowable:formProperty id="request_priority" name="Priority" type="enum" expression="${cpd:conf('{&quot;cpd_type&quot;:&quot;dropdown&quot;}')}" writable="false">
+          <flowable:value id="low" name="Low"></flowable:value>
+          <flowable:value id="medium" name="Medium"></flowable:value>
+          <flowable:value id="high" name="High"></flowable:value>
+        </flowable:formProperty>
+        <flowable:formProperty id="type_of_change" name="Type of change" type="enum" expression="${cpd:conf('{&quot;cpd_type&quot;:&quot;dropdown&quot;}')}" readable="false">
+          <flowable:value id="create" name="Create"></flowable:value>
+          <flowable:value id="modify" name="Update"></flowable:value>
+          <flowable:value id="delete" name="Delete"></flowable:value>
+        </flowable:formProperty>
+        <flowable:formProperty id="due_date" name="Requested effective date" type="date" datePattern="MM-dd-yyyy hh:mm" readable="false"></flowable:formProperty>
+        <flowable:formProperty id="support_doc_url" name="Link to support document" type="string" expression="${cpd:conf('{&quot;cpd_type&quot;:&quot;url&quot;}')}" readable="false"></flowable:formProperty>
+      </extensionElements>
+    </userTask>
+    <scriptTask id="sid-3D35DC40-2482-4D00-A4EE-B0E4C52722F3" name="Log approved" scriptFormat="javascript" flowable:autoStoreVariables="false">
+      <script><![CDATA[scriptLogger.info(execution, 'User selected action ' + action);
+execution.setVariable('action', null);
+execution.setVariable('comment', null);
+workflowStateAndActionLogger.updateWorkflowState(execution, 'Approved', 'Approve', true, comment, null);
+execution.setVariable('deliver_due_date', due_date);]]></script>
+    </scriptTask>
+    <userTask id="sid-7F55EBD0-344F-4F1B-8335-47AF94D1A2F9" name="deliver" flowable:dueDate="${deliver_due_date}" flowable:category="deliver" flowable:formFieldValidation="true">
+      <documentation>Deliver GCR ${title} $$$ Please approve the governance change request ${title} $$$ Artifact owner made the change $$$ Deliver</documentation>
+      <extensionElements>
+        <flowable:formProperty id="action" type="enum" readable="false" required="true">
+          <flowable:value id="#done" name="Done"></flowable:value>
+          <flowable:value id="-moreinfo" name="Need more info"></flowable:value>
+        </flowable:formProperty>
+        <flowable:formProperty id="comment" type="string" readable="false"></flowable:formProperty>
+        <flowable:formProperty id="title" name="Request title" type="string" writable="false"></flowable:formProperty>
+        <flowable:formProperty id="summary" name="Description of change" type="string" expression="${cpd:conf('{&quot;cpd_type&quot;:&quot;long_text&quot;}')}" writable="false"></flowable:formProperty>
+        <flowable:formProperty id="category" name="Category" type="string" expression="${cpd:conf('{&quot;cpd_type&quot;:&quot;wkc_category&quot;}')}" writable="false"></flowable:formProperty>
+        <flowable:formProperty id="request_priority" name="Priority" type="enum" expression="${cpd:conf('{&quot;cpd_type&quot;:&quot;dropdown&quot;}')}" writable="false">
+          <flowable:value id="low" name="Low"></flowable:value>
+          <flowable:value id="medium" name="Medium"></flowable:value>
+          <flowable:value id="high" name="High"></flowable:value>
+        </flowable:formProperty>
+        <flowable:formProperty id="type_of_change" name="Type of change" type="enum" expression="${cpd:conf('{&quot;cpd_type&quot;:&quot;dropdown&quot;}')}" writable="false">
+          <flowable:value id="create" name="Create"></flowable:value>
+          <flowable:value id="modify" name="Update"></flowable:value>
+          <flowable:value id="delete" name="Delete"></flowable:value>
+        </flowable:formProperty>
+        <flowable:formProperty id="due_date" name="Requested effective date" type="date" datePattern="MM-dd-yyyy hh:mm" writable="false"></flowable:formProperty>
+        <flowable:formProperty id="support_doc_url" name="Link to support document" type="string" expression="${cpd:conf('{&quot;cpd_type&quot;:&quot;url&quot;}')}" writable="false"></flowable:formProperty>
+      </extensionElements>
+    </userTask>
+    <endEvent id="sid-ACAA69FD-E876-46A6-ADE2-CF78282C2C05"></endEvent>
+    <sequenceFlow id="sid-241694E8-82ED-4AC7-AFFE-28DA26433B62" sourceRef="startEvent1" targetRef="sid-723963F8-3595-4AF3-8444-9DCA086761BE"></sequenceFlow>
+    <sequenceFlow id="sid-431BE396-06D5-47C0-A617-486CF0A95FF7" sourceRef="sid-723963F8-3595-4AF3-8444-9DCA086761BE" targetRef="sid-B11DE76D-D8CF-4283-B040-33284F3837F4"></sequenceFlow>
+    <sequenceFlow id="sid-C766FA1E-1A33-4002-B94C-AB6C19294558" sourceRef="sid-3D35DC40-2482-4D00-A4EE-B0E4C52722F3" targetRef="sid-7F55EBD0-344F-4F1B-8335-47AF94D1A2F9"></sequenceFlow>
+    <exclusiveGateway id="sid-D54E65B3-052E-490C-B1F0-63458E9C0E41" default="sid-82111E3F-1C3C-4DDA-B060-D4725D02416D"></exclusiveGateway>
+    <scriptTask id="sid-2B47C213-EC18-4436-8E78-B13AB9DD8CCF" name="Log reject" scriptFormat="javascript" flowable:autoStoreVariables="false">
+      <script><![CDATA[scriptLogger.info(execution, 'User selected action ' + action);
+execution.setVariable('action', null);
+execution.setVariable('comment', null);
+workflowStateAndActionLogger.updateWorkflowState(execution, 'Rejected', 'Reject', false, comment, null);]]></script>
+    </scriptTask>
+    <sequenceFlow id="sid-74CCFFC1-72C6-40FD-9903-F0D8C803FDCB" sourceRef="sid-B11DE76D-D8CF-4283-B040-33284F3837F4" targetRef="sid-D54E65B3-052E-490C-B1F0-63458E9C0E41"></sequenceFlow>
+    <exclusiveGateway id="sid-CC6741A7-1D54-4871-9AFF-10612FDBC1B7" default="sid-2009E310-1D81-4B5A-9ABC-F37B9587AA87"></exclusiveGateway>
+    <sequenceFlow id="sid-F2F17754-E505-4597-B699-1F012FC3E44E" sourceRef="sid-7F55EBD0-344F-4F1B-8335-47AF94D1A2F9" targetRef="sid-CC6741A7-1D54-4871-9AFF-10612FDBC1B7"></sequenceFlow>
+    <scriptTask id="sid-34525015-1639-4B0C-81D5-A50FACC34917" name="Log done" scriptFormat="javascript" flowable:autoStoreVariables="false">
+      <script><![CDATA[scriptLogger.info(execution, 'User selected action ' + action);
+execution.setVariable('action', null);
+execution.setVariable('comment', null);
+workflowStateAndActionLogger.updateWorkflowState(execution, 'Delivered', 'Done', true, comment, null);]]></script>
+    </scriptTask>
+    <scriptTask id="sid-B3D3EA4D-6518-4D83-AAB9-B2C147F19EF6" name="Log more info" scriptFormat="javascript" flowable:autoStoreVariables="false">
+      <script><![CDATA[scriptLogger.info(execution, 'User selected action ' + action);
+execution.setVariable('action', null);
+execution.setVariable('comment', null);
+workflowStateAndActionLogger.updateWorkflowState(execution, 'Refinement needed', 'Need more info', false, comment, null);]]></script>
+    </scriptTask>
+    <sequenceFlow id="sid-8764E775-39A9-49A8-B433-9DB84F355A29" sourceRef="sid-34525015-1639-4B0C-81D5-A50FACC34917" targetRef="sid-ACAA69FD-E876-46A6-ADE2-CF78282C2C05"></sequenceFlow>
+    <sequenceFlow id="sid-82111E3F-1C3C-4DDA-B060-D4725D02416D" sourceRef="sid-D54E65B3-052E-490C-B1F0-63458E9C0E41" targetRef="sid-2B47C213-EC18-4436-8E78-B13AB9DD8CCF"></sequenceFlow>
+    <sequenceFlow id="sid-2009E310-1D81-4B5A-9ABC-F37B9587AA87" sourceRef="sid-CC6741A7-1D54-4871-9AFF-10612FDBC1B7" targetRef="sid-B3D3EA4D-6518-4D83-AAB9-B2C147F19EF6"></sequenceFlow>
+    <userTask id="sid-45C46E30-8CAC-4C5B-A843-BB81B1A59127" name="refine" flowable:category="refine" flowable:formFieldValidation="true">
+      <documentation>Refine GCR ${title} $$$ Your governance change request ${title} needs to get refined $$$ Requester needs to reiterate on the request $$$ Refine</documentation>
+      <extensionElements>
+        <flowable:formProperty id="action" type="enum" readable="false" required="true">
+          <flowable:value id="refined" name="Refined"></flowable:value>
+          <flowable:value id="?discard" name="Discard"></flowable:value>
+        </flowable:formProperty>
+        <flowable:formProperty id="comment" type="string" readable="false" required="true"></flowable:formProperty>
+        <flowable:formProperty id="title" name="Request title" type="string" required="true"></flowable:formProperty>
+        <flowable:formProperty id="summary" name="Description of change" type="string" expression="${cpd:conf('{&quot;cpd_type&quot;:&quot;long_text&quot;}')}"></flowable:formProperty>
+        <flowable:formProperty id="category" name="Category" type="string" expression="${cpd:conf('{&quot;cpd_type&quot;:&quot;wkc_category&quot;}')}" required="true"></flowable:formProperty>
+        <flowable:formProperty id="request_priority" name="Priority" type="enum" expression="${cpd:conf('{&quot;cpd_type&quot;:&quot;dropdown&quot;}')}">
+          <flowable:value id="low" name="Low"></flowable:value>
+          <flowable:value id="medium" name="Medium"></flowable:value>
+          <flowable:value id="high" name="High"></flowable:value>
+        </flowable:formProperty>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="sid-474F223C-47C1-489D-9209-3F0F7C0A0564" sourceRef="sid-2B47C213-EC18-4436-8E78-B13AB9DD8CCF" targetRef="sid-45C46E30-8CAC-4C5B-A843-BB81B1A59127"></sequenceFlow>
+    <sequenceFlow id="sid-1471E9E2-C572-4C18-8DD0-2B1BD87B8064" sourceRef="sid-B3D3EA4D-6518-4D83-AAB9-B2C147F19EF6" targetRef="sid-45C46E30-8CAC-4C5B-A843-BB81B1A59127"></sequenceFlow>
+    <exclusiveGateway id="sid-5533B60A-C20D-4F3C-88F2-CC966FD46270" default="sid-EC06A369-6C73-4CF7-9533-3089A955ACE9"></exclusiveGateway>
+    <scriptTask id="sid-31C6B9BF-6692-482C-83D1-D28FC52320B5" name="Log refined" scriptFormat="javascript" flowable:autoStoreVariables="false">
+      <script><![CDATA[scriptLogger.info(execution, 'User selected action ' + action);
+execution.setVariable('action', null);
+execution.setVariable('comment', null);
+workflowStateAndActionLogger.updateWorkflowState(execution, 'Refined', 'Refined', true, comment, null);]]></script>
+    </scriptTask>
+    <sequenceFlow id="sid-8150FBF9-E543-46C9-9AD1-CF8E2D5A6288" sourceRef="sid-45C46E30-8CAC-4C5B-A843-BB81B1A59127" targetRef="sid-5533B60A-C20D-4F3C-88F2-CC966FD46270"></sequenceFlow>
+    <sequenceFlow id="sid-7FC2BE2C-E33D-49F5-88CF-AE3C424FFA8F" sourceRef="sid-31C6B9BF-6692-482C-83D1-D28FC52320B5" targetRef="sid-B11DE76D-D8CF-4283-B040-33284F3837F4"></sequenceFlow>
+    <scriptTask id="sid-4B4F418B-F8E6-4ACD-90AD-8E2F5A7BC1BB" name="Log discard" scriptFormat="javascript" flowable:autoStoreVariables="false">
+      <script><![CDATA[scriptLogger.info(execution, 'User selected action ' + action);
+execution.setVariable('action', null);
+execution.setVariable('comment', null);
+workflowStateAndActionLogger.updateWorkflowState(execution, 'Discarded', 'Discard', false, comment, null);]]></script>
+    </scriptTask>
+    <endEvent id="sid-92F7ACF3-B1AB-40F8-96D3-F18D03D490CA"></endEvent>
+    <sequenceFlow id="sid-B2A8E40E-F181-422C-B5BC-A7E82C5CC4B7" sourceRef="sid-4B4F418B-F8E6-4ACD-90AD-8E2F5A7BC1BB" targetRef="sid-92F7ACF3-B1AB-40F8-96D3-F18D03D490CA"></sequenceFlow>
+    <sequenceFlow id="sid-EC06A369-6C73-4CF7-9533-3089A955ACE9" sourceRef="sid-5533B60A-C20D-4F3C-88F2-CC966FD46270" targetRef="sid-4B4F418B-F8E6-4ACD-90AD-8E2F5A7BC1BB"></sequenceFlow>
+    <sequenceFlow id="sid-AED7C94B-06D1-48D5-9028-DAAE041157C2" sourceRef="sid-CC6741A7-1D54-4871-9AFF-10612FDBC1B7" targetRef="sid-34525015-1639-4B0C-81D5-A50FACC34917">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == '#done'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="sid-616B825F-5B5F-4B8E-B074-47A6C59C13AB" sourceRef="sid-D54E65B3-052E-490C-B1F0-63458E9C0E41" targetRef="sid-3D35DC40-2482-4D00-A4EE-B0E4C52722F3">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'approve'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="sid-0FA47717-87A6-4D0B-8370-7BB00C989AB5" sourceRef="sid-5533B60A-C20D-4F3C-88F2-CC966FD46270" targetRef="sid-31C6B9BF-6692-482C-83D1-D28FC52320B5">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${action == 'refined'}]]></conditionExpression>
+    </sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Governance_change_request_prio">
+    <bpmndi:BPMNPlane bpmnElement="Governance_change_request_prio" id="BPMNPlane_Governance_change_request_prio">
+      <bpmndi:BPMNShape bpmnElement="startEvent1" id="BPMNShape_startEvent1">
+        <omgdc:Bounds height="30.0" width="30.0" x="90.0" y="45.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-723963F8-3595-4AF3-8444-9DCA086761BE" id="BPMNShape_sid-723963F8-3595-4AF3-8444-9DCA086761BE">
+        <omgdc:Bounds height="80.0" width="100.0" x="55.0" y="150.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-B11DE76D-D8CF-4283-B040-33284F3837F4" id="BPMNShape_sid-B11DE76D-D8CF-4283-B040-33284F3837F4">
+        <omgdc:Bounds height="80.0" width="100.0" x="240.0" y="150.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-3D35DC40-2482-4D00-A4EE-B0E4C52722F3" id="BPMNShape_sid-3D35DC40-2482-4D00-A4EE-B0E4C52722F3">
+        <omgdc:Bounds height="80.0" width="100.0" x="525.0" y="150.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-7F55EBD0-344F-4F1B-8335-47AF94D1A2F9" id="BPMNShape_sid-7F55EBD0-344F-4F1B-8335-47AF94D1A2F9">
+        <omgdc:Bounds height="80.0" width="100.0" x="705.0" y="150.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-ACAA69FD-E876-46A6-ADE2-CF78282C2C05" id="BPMNShape_sid-ACAA69FD-E876-46A6-ADE2-CF78282C2C05">
+        <omgdc:Bounds height="28.0" width="28.0" x="1041.0" y="315.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-D54E65B3-052E-490C-B1F0-63458E9C0E41" id="BPMNShape_sid-D54E65B3-052E-490C-B1F0-63458E9C0E41">
+        <omgdc:Bounds height="40.0" width="40.0" x="420.0" y="170.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-2B47C213-EC18-4436-8E78-B13AB9DD8CCF" id="BPMNShape_sid-2B47C213-EC18-4436-8E78-B13AB9DD8CCF">
+        <omgdc:Bounds height="80.0" width="100.0" x="390.0" y="270.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-CC6741A7-1D54-4871-9AFF-10612FDBC1B7" id="BPMNShape_sid-CC6741A7-1D54-4871-9AFF-10612FDBC1B7">
+        <omgdc:Bounds height="40.0" width="40.0" x="879.0" y="170.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-34525015-1639-4B0C-81D5-A50FACC34917" id="BPMNShape_sid-34525015-1639-4B0C-81D5-A50FACC34917">
+        <omgdc:Bounds height="80.0" width="100.0" x="1005.0" y="150.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-B3D3EA4D-6518-4D83-AAB9-B2C147F19EF6" id="BPMNShape_sid-B3D3EA4D-6518-4D83-AAB9-B2C147F19EF6">
+        <omgdc:Bounds height="80.0" width="100.0" x="849.0" y="270.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-45C46E30-8CAC-4C5B-A843-BB81B1A59127" id="BPMNShape_sid-45C46E30-8CAC-4C5B-A843-BB81B1A59127">
+        <omgdc:Bounds height="80.0" width="100.0" x="390.0" y="405.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-5533B60A-C20D-4F3C-88F2-CC966FD46270" id="BPMNShape_sid-5533B60A-C20D-4F3C-88F2-CC966FD46270">
+        <omgdc:Bounds height="40.0" width="40.0" x="270.0" y="425.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-31C6B9BF-6692-482C-83D1-D28FC52320B5" id="BPMNShape_sid-31C6B9BF-6692-482C-83D1-D28FC52320B5">
+        <omgdc:Bounds height="80.0" width="100.0" x="240.0" y="289.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-4B4F418B-F8E6-4ACD-90AD-8E2F5A7BC1BB" id="BPMNShape_sid-4B4F418B-F8E6-4ACD-90AD-8E2F5A7BC1BB">
+        <omgdc:Bounds height="80.0" width="100.0" x="90.0" y="405.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sid-92F7ACF3-B1AB-40F8-96D3-F18D03D490CA" id="BPMNShape_sid-92F7ACF3-B1AB-40F8-96D3-F18D03D490CA">
+        <omgdc:Bounds height="28.0" width="28.0" x="126.0" y="540.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="sid-241694E8-82ED-4AC7-AFFE-28DA26433B62" id="BPMNEdge_sid-241694E8-82ED-4AC7-AFFE-28DA26433B62">
+        <omgdi:waypoint x="105.0" y="74.9499989187508"></omgdi:waypoint>
+        <omgdi:waypoint x="105.0" y="150.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-8150FBF9-E543-46C9-9AD1-CF8E2D5A6288" id="BPMNEdge_sid-8150FBF9-E543-46C9-9AD1-CF8E2D5A6288">
+        <omgdi:waypoint x="390.0" y="445.0"></omgdi:waypoint>
+        <omgdi:waypoint x="309.906621080582" y="445.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-B2A8E40E-F181-422C-B5BC-A7E82C5CC4B7" id="BPMNEdge_sid-B2A8E40E-F181-422C-B5BC-A7E82C5CC4B7">
+        <omgdi:waypoint x="140.0" y="484.95000000000005"></omgdi:waypoint>
+        <omgdi:waypoint x="140.0" y="540.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-82111E3F-1C3C-4DDA-B060-D4725D02416D" id="BPMNEdge_sid-82111E3F-1C3C-4DDA-B060-D4725D02416D">
+        <omgdi:waypoint x="440.0" y="209.94169442131556"></omgdi:waypoint>
+        <omgdi:waypoint x="440.0" y="270.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-F2F17754-E505-4597-B699-1F012FC3E44E" id="BPMNEdge_sid-F2F17754-E505-4597-B699-1F012FC3E44E">
+        <omgdi:waypoint x="804.9499999999008" y="190.0"></omgdi:waypoint>
+        <omgdi:waypoint x="879.0" y="190.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-AED7C94B-06D1-48D5-9028-DAAE041157C2" id="BPMNEdge_sid-AED7C94B-06D1-48D5-9028-DAAE041157C2">
+        <omgdi:waypoint x="918.9436098654708" y="190.0"></omgdi:waypoint>
+        <omgdi:waypoint x="1005.0" y="190.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-616B825F-5B5F-4B8E-B074-47A6C59C13AB" id="BPMNEdge_sid-616B825F-5B5F-4B8E-B074-47A6C59C13AB">
+        <omgdi:waypoint x="459.94261658031087" y="190.0"></omgdi:waypoint>
+        <omgdi:waypoint x="525.0" y="190.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-474F223C-47C1-489D-9209-3F0F7C0A0564" id="BPMNEdge_sid-474F223C-47C1-489D-9209-3F0F7C0A0564">
+        <omgdi:waypoint x="440.0" y="349.95000000000005"></omgdi:waypoint>
+        <omgdi:waypoint x="440.0" y="405.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-431BE396-06D5-47C0-A617-486CF0A95FF7" id="BPMNEdge_sid-431BE396-06D5-47C0-A617-486CF0A95FF7">
+        <omgdi:waypoint x="154.9499999999635" y="190.0"></omgdi:waypoint>
+        <omgdi:waypoint x="240.0" y="190.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-2009E310-1D81-4B5A-9ABC-F37B9587AA87" id="BPMNEdge_sid-2009E310-1D81-4B5A-9ABC-F37B9587AA87">
+        <omgdi:waypoint x="899.0" y="209.9416944213156"></omgdi:waypoint>
+        <omgdi:waypoint x="899.0" y="270.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-EC06A369-6C73-4CF7-9533-3089A955ACE9" id="BPMNEdge_sid-EC06A369-6C73-4CF7-9533-3089A955ACE9">
+        <omgdi:waypoint x="270.0" y="445.0"></omgdi:waypoint>
+        <omgdi:waypoint x="189.95" y="445.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-8764E775-39A9-49A8-B433-9DB84F355A29" id="BPMNEdge_sid-8764E775-39A9-49A8-B433-9DB84F355A29">
+        <omgdi:waypoint x="1055.0" y="229.95000000000002"></omgdi:waypoint>
+        <omgdi:waypoint x="1055.0" y="315.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-1471E9E2-C572-4C18-8DD0-2B1BD87B8064" id="BPMNEdge_sid-1471E9E2-C572-4C18-8DD0-2B1BD87B8064">
+        <omgdi:waypoint x="849.0" y="324.6911764705883"></omgdi:waypoint>
+        <omgdi:waypoint x="489.95" y="430.29411764705884"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-7FC2BE2C-E33D-49F5-88CF-AE3C424FFA8F" id="BPMNEdge_sid-7FC2BE2C-E33D-49F5-88CF-AE3C424FFA8F">
+        <omgdi:waypoint x="290.0" y="289.0"></omgdi:waypoint>
+        <omgdi:waypoint x="290.0" y="229.95000000000002"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-C766FA1E-1A33-4002-B94C-AB6C19294558" id="BPMNEdge_sid-C766FA1E-1A33-4002-B94C-AB6C19294558">
+        <omgdi:waypoint x="624.9499999999999" y="190.0"></omgdi:waypoint>
+        <omgdi:waypoint x="705.0" y="190.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-74CCFFC1-72C6-40FD-9903-F0D8C803FDCB" id="BPMNEdge_sid-74CCFFC1-72C6-40FD-9903-F0D8C803FDCB">
+        <omgdi:waypoint x="339.9499999998728" y="190.0"></omgdi:waypoint>
+        <omgdi:waypoint x="420.0" y="190.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="sid-0FA47717-87A6-4D0B-8370-7BB00C989AB5" id="BPMNEdge_sid-0FA47717-87A6-4D0B-8370-7BB00C989AB5">
+        <omgdi:waypoint x="290.0" y="425.0"></omgdi:waypoint>
+        <omgdi:waypoint x="290.0" y="368.95000000000005"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
