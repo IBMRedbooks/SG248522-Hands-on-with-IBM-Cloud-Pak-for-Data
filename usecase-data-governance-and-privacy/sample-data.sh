@@ -37,7 +37,10 @@ __loadDB2Docker()
 
    echo -e "\nMaking some space for data in the db2 container"
    #make a sample directory
-   $D   exec $DB2_DOCKER_NAME bash -c  "mkdir -p samples/payload"
+   $D   exec $DB2_DOCKER_NAME bash -c  "mkdir -p /samples/payload"
+
+   echo -e "\nCreate a directory to hold the scripts"
+   $D   exec $DB2_DOCKER_NAME bash -c  "mkdir -p /samples/scripts"
 
    echo -e "\nMoving Payload to DB2"
    #push the payload
