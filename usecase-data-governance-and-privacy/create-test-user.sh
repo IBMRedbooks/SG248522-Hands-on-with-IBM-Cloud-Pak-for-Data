@@ -1,6 +1,6 @@
 #!/bin/sh
 
-username="redbook"
+username="test"
 password="password"
 
 if [ $(id -u) -eq 0 ]; then
@@ -20,7 +20,7 @@ if [ $(id -u) -eq 0 ]; then
 
 
         echo "granting the redbook user permissions on the bank database\n"
-        db2 GRANT DBADM, CREATETAB, BINDADD, CONNECT, CREATE_NOT_FENCED, IMPLICIT_SCHEMA, LOAD ON DATABASE TO USER redbook
+        db2 GRANT DBADM, CREATETAB, BINDADD, CONNECT, CREATE_NOT_FENCED, IMPLICIT_SCHEMA, LOAD ON DATABASE TO USER test
 
         exit 0
 else
