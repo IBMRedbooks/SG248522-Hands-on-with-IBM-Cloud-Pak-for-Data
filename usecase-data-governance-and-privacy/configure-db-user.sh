@@ -30,7 +30,7 @@ __configureDB2ForLineage()
    #push the payload
    $D cp create-test-user.sh  $DB2_DOCKER_NAME:/samples/scripts
 
-   echo -e "\nRunning create redbook user script"
+   echo -e "\nRunning create test user script"
    $D exec  $DB2_DOCKER_NAME  bash -c "cd /samples/scripts && chmod -R 777 create-test-user.sh  &&  ./create-test-user.sh"
 
 }
