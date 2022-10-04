@@ -3,7 +3,7 @@
 RIGHT_NOW=$(date +"%x %r %Z")
 TIME_STAMP="Updated on $RIGHT_NOW by $USER"
 PAYLOAD="payload"
-DB2_DOCKER_NAME="redbook-test"
+DB2_DOCKER_NAME="db-test"
 DB2_DATA_DIR="/data/db2"    #note this must exist on the system hosting podman
 # D=docker
 # Check if podman or docker command was found
