@@ -3,7 +3,7 @@
 RIGHT_NOW=$(date +"%x %r %Z")
 TIME_STAMP="Updated on $RIGHT_NOW by $USER"
 PAYLOAD="payload"
-DB2_DOCKER_NAME="redbook-test"
+DB2_DOCKER_NAME="db-test"
 # D=docker
 # Check if podman or docker command was found
 if command -v podman &> /dev/null;then
@@ -18,7 +18,7 @@ fi
 
 ##### Functions
 
-__configureReportingMart()
+__configureDBLineageSettings()
 {
 
    if [[ ! '$D ps | grep $DB2_DOCKERNAME' ]]; then
@@ -28,10 +28,11 @@ __configureReportingMart()
 
    echo -e "\nCopy lineage scripts to container"
    #push the payload
-   $D cp create-reporting-mart-schema.sh  $DB2_DOCKER_NAME:/samples/scripts
+   $D cp db-lineage-settings.sh  $DB2_DOCKER_NAME:/samples/scripts
+   $D cp lineage-settings.sql  $DB2_DOCKER_NAME:/samples/scripts
 
    echo -e "\nRunning lineage configuration script"
-   $D exec  $DB2_DOCKER_NAME  bash -c "cd /samples/scripts && chmod -R 777 create-reporting-mart-schema.sh  &&  ./create-reporting-mart-schema.sh"
+   $D exec  $DB2_DOCKER_NAME  bash -c "cd /samples/scripts && chmod -R 777 db-lineage-settings.sh  &&  ./db-lineage-settings.sh"
 
 }
-__configureReportingMart
+__configureDBLineageSettings

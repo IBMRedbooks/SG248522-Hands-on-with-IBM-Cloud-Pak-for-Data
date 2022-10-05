@@ -3,7 +3,7 @@
 RIGHT_NOW=$(date +"%x %r %Z")
 TIME_STAMP="Updated on $RIGHT_NOW by $USER"
 PAYLOAD="payload"
-DB2_DOCKER_NAME="redbook-test"
+DB2_DOCKER_NAME="db-test"
 # D=docker
 # Check if podman or docker command was found
 if command -v podman &> /dev/null;then
@@ -22,16 +22,16 @@ __configureDB2ForLineage()
 {
 
    if [[ ! '$D ps | grep $DB2_DOCKERNAME' ]]; then
-     echo -e "\nRedbbok test container not running"
+     echo -e "\nDb2 container not running"
      exit
    fi
 
-   echo -e "\nCopy create-rebook-user script to container"
+   echo -e "\nCopy create-test-user script to container"
    #push the payload
-   $D cp create-redbook-user.sh  $DB2_DOCKER_NAME:/samples/scripts
+   $D cp create-test-user.sh  $DB2_DOCKER_NAME:/samples/scripts
 
-   echo -e "\nRunning create redbook user script"
-   $D exec  $DB2_DOCKER_NAME  bash -c "cd /samples/scripts && chmod -R 777 create-redbook-user.sh  &&  ./create-redbook-user.sh"
+   echo -e "\nRunning create test user script"
+   $D exec  $DB2_DOCKER_NAME  bash -c "cd /samples/scripts && chmod -R 777 create-test-user.sh  &&  ./create-test-user.sh"
 
 }
 __configureDB2ForLineage
