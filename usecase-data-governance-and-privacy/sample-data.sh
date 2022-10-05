@@ -27,14 +27,14 @@ __loadDB2Docker()
    fi
 
   #run setup the payload
-   if [[ ! `$D  images --quiet ibmcom/db2` ]]; then
-        echo -e "\nLoading Docker $DB2_DOCKER_NAME ..."
-        $D run -d --name $DB2_DOCKER_NAME -p 50000:50000 --env-file ./db_env -v ${DB2_DATA_DIR}:/database:z --privileged=true  ibmcom/db2
-        #Wait couple of minutes to make sure db2 instance started and online
-        echo -e "\nWaiting 3 minutes until Db2 instance has started..."
-        sleep 180
-  fi
-
+ 
+  echo -e "\nLoading Docker $DB2_DOCKER_NAME ..."
+  $D run -d --name $DB2_DOCKER_NAME -p 50000:50000 --env-file ./db_env -v ${DB2_DATA_DIR}:/database:z --privileged=true  ibmcom/db2
+  #Wait couple of minutes to make sure db2 instance started and online
+  echo -e "\nWaiting 3 minutes until Db2 instance has started..."
+  
+  sleep 180
+ 
    echo -e "\nMaking some space for data in the db2 container"
    #make a sample directory
    $D   exec $DB2_DOCKER_NAME bash -c  "mkdir -p /samples/payload"
